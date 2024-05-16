@@ -1,0 +1,250 @@
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const imageNames = ['bird', 'cactus', 'dino'];
+
+// グローバルな game オブジェクトの作成
+const game = {
+  counter: 0,
+  backgrounds: [],
+  bgm1: new Audio('bgm/fieldSong.mp3'),
+  bgm2: new Audio('bgm/jump.mp3'),
+  enemys: [],
+  enemyCountdown: 0,
+  image: {},
+  //isGameOver: true,
+  score: 0,
+  state: 'loading',
+  timer: null,
+};
+game.bgm1.loop = true;
+
+// イベントハンドラ（ e は KeyboardEvent オブジェクト）
+document.onkeydown = (e) => {
+  if(e.code === 'Space' && game.state === 'init') {
+    start();
+  }
+  if(e.code === 'Space' && game.dino.moveY === 0) {
+    game.dino.moveY = -41;
+  }
+  if (e.code === 'Enter' && game.state === 'gameover') {
+    init();
+  }
+};
+
+// 恐竜の表示（恐竜の表示位置、移動速度、画像データ情報）
+function createDino() {
+  game.dino = {
+    x: game.image.dino.width / 2,
+    y: canvas.height - game.image.dino.height / 2,
+    moveY: 0,
+    width: game.image.dino.width,
+    height: game.image.dino.height,
+    image: game.image.dino,
+  }
+}
+
+// 背景オブジェクトの作成
+function createBackGround() {
+  game.backGrounds = [];
+  for (let x = 0; x <= canvas.width; x += 200) {
+    game.backGrounds.push({
+      x: x,
+      y: canvas.height,
+      width: 200,
+      moveX: -20,
+    });
+  }
+}
+
+// 敵キャラクタ（cactus）の生成
+function createCactus(createX) {
+  game.enemys.push({
+    x: createX,
+    y: canvas.height - game.image.cactus.height / 2,
+    width: game.image.cactus.width,
+    height: game.image.cactus.height,
+    moveX: -10,
+    image: game.image.cactus
+  });
+}
+
+// 敵キャラクタ（bird）の生成
+function createBird() {
+  const birdY = Math.random() * (300 - game.image.bird.height) + 150;
+  game.enemys.push({
+    x: canvas.width + game.image.bird.width / 2,
+    y: birdY,
+    width: game.image.bird.width,
+    height: game.image.bird.height,
+    moveX: -15,
+    image: game.image.bird
+  });
+}
+
+// 敵キャラクタの生成
+function createEnemys() {
+  if (game.enemyCountdown === 0) {
+    game.enemyCountdown = 60 - Math.floor(game.score / 100);
+    if (game.enemyCountdown <= 30) game.enemyCountdown = 30;
+    switch (Math.floor(Math.random() * 3)) {
+      case 0:
+        createCactus(canvas.width + game.image.cactus.width / 2);
+        break;
+      case 1:
+        createCactus(canvas.width + game.image.cactus.width / 2);
+        createCactus(canvas.width + game.image.cactus.width * 3 / 2);
+        break;
+      case 2:
+        createBird();
+        break;
+    }
+  }
+}
+
+// 背景の移動
+function moveBackGrounds() {
+  for (const backGround of game.backGrounds) {
+    backGround.x += backGround.moveX;
+  }
+}
+
+// 恐竜の移動
+function moveDino() {
+  game.dino.y += game.dino.moveY;
+  // キャラクタが地面に着いたら
+  if (game.dino.y >= canvas.height - game.dino.height / 2) {
+    game.dino.y = canvas.height - game.dino.height / 2;
+    game.dino.moveY = 0;
+  } else {
+    game.dino.moveY += 3;
+  }
+}
+
+// 敵キャラクタの移動
+function moveEnemys() {
+  for (const enemy of game.enemys) {
+    enemy.x += enemy.moveX;
+  }
+  // 画面の外に出たキャラクタを配列から削除
+  game.enemys = game.enemys.filter(enemy => enemy.x > -enemy.width);
+}
+
+// 背景の描画
+function drawBackGrounds() {
+  ctx.fillStyle = 'sienna';
+  for (const backGround of game.backGrounds) {
+    ctx.fillRect(backGround.x, backGround.y - 5, backGround.width, 5);
+    ctx.fillRect(backGround.x + 20, backGround.y - 10, backGround.width - 40, 5);
+    ctx.fillRect(backGround.x + 50, backGround.y - 15, backGround.width - 100, 5);
+  }
+}
+
+// 恐竜の描画
+function drawDino() {
+  ctx.drawImage(game.image.dino, game.dino.x - game.dino.width / 2, game.dino.y - game.dino.height / 2);
+}
+
+// 敵キャラクタの描画
+function drawEnemys() {
+  for (const enemy of game.enemys) {
+    ctx.drawImage(enemy.image, enemy.x - enemy.width / 2, enemy.y - enemy.height / 2);
+  }
+}
+
+// あたり判定
+function hitCheck() {
+  for (const enemy of game.enemys) {
+    if (
+      Math.abs(game.dino.x - enemy.x) < game.dino.width * 0.8 / 2 + enemy.width * 0.9 / 2 &&
+      Math.abs(game.dino.y - enemy.y) < game.dino.height * 0.5/ 2 + enemy.height * 0.9 / 2
+    ) {
+      //game.isGameOver = true;
+      game.state = 'gameover';
+      game.bgm1.pause();
+      ctx.fillStyle = 'black';
+      ctx.font = 'bold 100px serif';
+      ctx.fillText(`Game Over!`, 150, 200);
+      clearInterval(game.timer);
+    }
+  }
+}
+
+//カウンタの更新
+function drawScore() {
+  ctx.fillStyle = 'black';
+  ctx.font = '24px serif';
+  ctx.fillText(`score:${game.score}`, 0, 30);
+}
+
+function start() {
+  game.state = 'gaming';
+  game.bgm1.play();
+  game.timer = setInterval(ticker, 30);
+}
+
+// アニメーション
+function ticker() {
+  // 画面クリア
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // 背景の作成
+  if (game.counter % 10 === 0) {
+    createBackGround();
+  }
+  // 敵キャラクタの生成（1/100 , 1/200）
+  createEnemys();
+  // キャラクタの移動
+  moveBackGrounds();
+  moveDino();
+  moveEnemys();
+  // キャラクタの描画
+  drawBackGrounds();
+  drawDino();
+  drawEnemys();
+  // スコアの描画
+  drawScore();
+  // あたり判定
+  hitCheck();
+  // カウンタの更新
+  game.score += 1;
+  game.counter = (game.counter + 1) % 1000000;
+  game.enemyCountdown -= 1;
+}
+
+// パラメータの初期化
+function init() {
+  game.counter = 0;
+  game.enemys = [];
+  game.enemyCountdown = 0;
+  //game.isGameOver = false;
+  game.score = 0;
+  game.state = 'init';
+  // 画面クリア
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // 恐竜の表示
+  createDino();
+  //game.timer = setInterval(ticker, 30);
+  drawDino();
+  // 背景の描画
+  createBackGround();
+  drawBackGrounds();
+  // 文章の表示
+  ctx.fillStyle = 'black';
+  ctx.font = 'bold 60px serif';
+  ctx.fillText(`Press Space Key`, 60, 150);
+  ctx.fillText(`to start.`, 150, 230);
+}
+
+// 画像の読み込み
+let imageLoadCounter = 0;
+for (const imageName of imageNames) {
+  const imagePath = `image/${imageName}.png`;
+  game.image[imageName] = new Image();
+  game.image[imageName].src = imagePath;
+  game.image[imageName].onload = () => {
+    imageLoadCounter += 1;
+    if (imageLoadCounter === imageNames.length) {
+      console.log('画像のロードが完了しました。');
+      init();
+    }
+  }
+}
