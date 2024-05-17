@@ -6,19 +6,18 @@ const imageNames = ['bird', 'cactus', 'dino'];
 const game = {
   counter: 0,
   backgrounds: [],
-  bgm1: new Audio('fieldSong.mp3'),
-  bgm2: new Audio('jump.mp3'),
+  bgm1: new Audio('bgm/fieldSong.mp3'),
+  bgm2: new Audio('bgm/jump.mp3'),
   enemys: [],
   enemyCountdown: 0,
   image: {},
-  //isGameOver: true,
   score: 0,
   state: 'loading',
   timer: null,
 };
 game.bgm1.loop = true;
 
-// イベントハンドラ（ e は KeyboardEvent オブジェクト）
+/** イベントハンドラ（ e は KeyboardEvent オブジェクト）*/
 document.onkeydown = (e) => {
   if(e.code === 'Space' && game.state === 'init') {
     start();
@@ -31,7 +30,7 @@ document.onkeydown = (e) => {
   }
 };
 
-// 恐竜の表示（恐竜の表示位置、移動速度、画像データ情報）
+/** 恐竜の表示（恐竜の表示位置、移動速度、画像データ情報）*/
 function createDino() {
   game.dino = {
     x: game.image.dino.width / 2,
@@ -43,7 +42,7 @@ function createDino() {
   }
 }
 
-// 背景オブジェクトの作成
+/** 背景オブジェクトの作成 */
 function createBackGround() {
   game.backGrounds = [];
   for (let x = 0; x <= canvas.width; x += 200) {
@@ -56,7 +55,7 @@ function createBackGround() {
   }
 }
 
-// 敵キャラクタ（cactus）の生成
+/** 敵キャラクタ（cactus）の生成 */
 function createCactus(createX) {
   game.enemys.push({
     x: createX,
@@ -68,7 +67,7 @@ function createCactus(createX) {
   });
 }
 
-// 敵キャラクタ（bird）の生成
+/** 敵キャラクタ（bird）の生成 */
 function createBird() {
   const birdY = Math.random() * (300 - game.image.bird.height) + 150;
   game.enemys.push({
@@ -81,7 +80,7 @@ function createBird() {
   });
 }
 
-// 敵キャラクタの生成
+/** 敵キャラクタの生成 */
 function createEnemys() {
   if (game.enemyCountdown === 0) {
     game.enemyCountdown = 60 - Math.floor(game.score / 100);
@@ -101,14 +100,14 @@ function createEnemys() {
   }
 }
 
-// 背景の移動
+/** 背景の移動 */
 function moveBackGrounds() {
   for (const backGround of game.backGrounds) {
     backGround.x += backGround.moveX;
   }
 }
 
-// 恐竜の移動
+/** 恐竜の移動 */
 function moveDino() {
   game.dino.y += game.dino.moveY;
   // キャラクタが地面に着いたら
@@ -120,7 +119,7 @@ function moveDino() {
   }
 }
 
-// 敵キャラクタの移動
+/** 敵キャラクタの移動 */
 function moveEnemys() {
   for (const enemy of game.enemys) {
     enemy.x += enemy.moveX;
@@ -129,7 +128,7 @@ function moveEnemys() {
   game.enemys = game.enemys.filter(enemy => enemy.x > -enemy.width);
 }
 
-// 背景の描画
+/** 背景の描画 */
 function drawBackGrounds() {
   ctx.fillStyle = 'sienna';
   for (const backGround of game.backGrounds) {
@@ -139,26 +138,25 @@ function drawBackGrounds() {
   }
 }
 
-// 恐竜の描画
+/** 恐竜の描画 */
 function drawDino() {
   ctx.drawImage(game.image.dino, game.dino.x - game.dino.width / 2, game.dino.y - game.dino.height / 2);
 }
 
-// 敵キャラクタの描画
+/** 敵キャラクタの描画 */
 function drawEnemys() {
   for (const enemy of game.enemys) {
     ctx.drawImage(enemy.image, enemy.x - enemy.width / 2, enemy.y - enemy.height / 2);
   }
 }
 
-// あたり判定
+/** あたり判定 */
 function hitCheck() {
   for (const enemy of game.enemys) {
     if (
       Math.abs(game.dino.x - enemy.x) < game.dino.width * 0.8 / 2 + enemy.width * 0.9 / 2 &&
-      Math.abs(game.dino.y - enemy.y) < game.dino.height * 0.5/ 2 + enemy.height * 0.9 / 2
+      Math.abs(game.dino.y - enemy.y) < game.dino.height * 0.5 / 2 + enemy.height * 0.9 / 2
     ) {
-      //game.isGameOver = true;
       game.state = 'gameover';
       game.bgm1.pause();
       ctx.fillStyle = 'black';
@@ -169,20 +167,21 @@ function hitCheck() {
   }
 }
 
-//カウンタの更新
+/** カウンタの更新 */
 function drawScore() {
   ctx.fillStyle = 'black';
   ctx.font = '24px serif';
   ctx.fillText(`score:${game.score}`, 0, 30);
 }
 
+/** スタート */
 function start() {
   game.state = 'gaming';
   game.bgm1.play();
   game.timer = setInterval(ticker, 30);
 }
 
-// アニメーション
+/** アニメーション */
 function ticker() {
   // 画面クリア
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -210,19 +209,17 @@ function ticker() {
   game.enemyCountdown -= 1;
 }
 
-// パラメータの初期化
+/** パラメータの初期化 */
 function init() {
   game.counter = 0;
   game.enemys = [];
   game.enemyCountdown = 0;
-  //game.isGameOver = false;
   game.score = 0;
   game.state = 'init';
   // 画面クリア
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   // 恐竜の表示
   createDino();
-  //game.timer = setInterval(ticker, 30);
   drawDino();
   // 背景の描画
   createBackGround();
@@ -234,10 +231,10 @@ function init() {
   ctx.fillText(`to start.`, 150, 230);
 }
 
-// 画像の読み込み
+/** 画像の読み込み */
 let imageLoadCounter = 0;
 for (const imageName of imageNames) {
-  const imagePath = `${imageName}.png`;
+  const imagePath = `image/${imageName}.png`;
   game.image[imageName] = new Image();
   game.image[imageName].src = imagePath;
   game.image[imageName].onload = () => {
